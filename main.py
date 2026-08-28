@@ -1,4 +1,5 @@
 import os
+import re
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 import yt_dlp
@@ -34,21 +35,29 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(accounts_msg)
         
     elif text == 'تحميل مقطع من المنصات':
-        await update.message.reply_text("أرسل رابط المقطع الآن من أي منصة وسيتم تحميله وإرساله لك.")
+        await update.message.reply_text("أرسل رابط المقطع الآن وسيتم تحميله وإرساله لك.")
         
-    elif text.startswith(('http://', 'https://')):
+    elif "http://" in text or "https://" in text:
+        # استخراج الرابط فقط من النص
+        urls = re.findall(r'(https?://[^\s]+)', text)
+        if not urls:
+            return
+        
+        url = urls[0]
         status_msg = await update.message.reply_text("جاري تحميل المقطع...")
         file_path = f"video_{update.message.message_id}.mp4"
         
+        # اختيار صيغة مدموجة جاهزة تجنباً للخطأ
         ydl_opts = {
-            'format': 'best',
+            'format': 'best[ext=mp4]/best',
             'outtmpl': file_path,
             'quiet': True,
+            'no_warnings': True,
         }
         
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([text])
+                ydl.download([url])
             
             with open(file_path, 'rb') as video:
                 await update.message.reply_video(video=video)
@@ -58,7 +67,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 os.remove(file_path)
                 
         except Exception as e:
-            await status_msg.edit_text("حدث خطأ أثناء تحميل المقطع، تأكد من صحة الرابط وحاول مرة أخرى.")
+            await status_msg.edit_text("حدث خطأ أثناء التحميل. تأكد من أن المقطع ليس طويلاً جداً وأن الرابط مباشر.")
             if os.path.exists(file_path):
                 os.remove(file_path)
 
