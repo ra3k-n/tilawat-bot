@@ -1,21 +1,19 @@
 import os
-import re
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
-import yt_dlp
 
 TOKEN = os.getenv("BOT_TOKEN")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_keyboard = [
-        ['تحميل مقطع من المنصات'],
-        ['حساباتنا على التواصل الاجتماعي']
+        ['حساباتنا على التواصل الاجتماعي'],
+        ['الاقتراحات والدعم']
     ]
     markup = ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True)
     
     welcome_msg = (
         "أهلاً بك في بوت تلاوات الحرمين\n\n"
-        "البوت المخصص لنشر التلاوات.\n\n"
+        "البوت المخصص لدعمكم ولخدماتنا الرسمية.\n\n"
         "اختيار الخدمة المطلوبة من القائمة بالأسفل"
     )
     await update.message.reply_text(welcome_msg, reply_markup=markup)
@@ -34,42 +32,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await update.message.reply_text(accounts_msg)
         
-    elif text == 'تحميل مقطع من المنصات':
-        await update.message.reply_text("أرسل رابط المقطع الآن وسيتم تحميله وإرساله لك.")
-        
-    elif "http://" in text or "https://" in text:
-        # استخراج الرابط فقط من النص
-        urls = re.findall(r'(https?://[^\s]+)', text)
-        if not urls:
-            return
-        
-        url = urls[0]
-        status_msg = await update.message.reply_text("جاري تحميل المقطع...")
-        file_path = f"video_{update.message.message_id}.mp4"
-        
-        # اختيار صيغة مدموجة جاهزة تجنباً للخطأ
-        ydl_opts = {
-            'format': 'best[ext=mp4]/best',
-            'outtmpl': file_path,
-            'quiet': True,
-            'no_warnings': True,
-        }
-        
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
-            
-            with open(file_path, 'rb') as video:
-                await update.message.reply_video(video=video)
-            
-            await status_msg.delete()
-            if os.path.exists(file_path):
-                os.remove(file_path)
-                
-        except Exception as e:
-            await status_msg.edit_text("حدث خطأ أثناء التحميل. تأكد من أن المقطع ليس طويلاً جداً وأن الرابط مباشر.")
-            if os.path.exists(file_path):
-                os.remove(file_path)
+    elif text == 'الاقتراحات والدعم':
+        suggestions_msg = (
+            "للإقتراحات والاستفسارات والتواصل معنا عبر تيليجرام:\n\n"
+            "https://t.me/tilawat_2.h"
+        )
+        await update.message.reply_text(suggestions_msg)
 
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
